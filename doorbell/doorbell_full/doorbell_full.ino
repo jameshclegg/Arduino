@@ -45,7 +45,12 @@ int external_in[2] = {front_door_in, side_door_in};
 // 
 // Other constants
 //
-int loop_delay_ms = 300;
+// How often to read inputs
+int loop_delay_ms = 100;
+
+// Internal bell pattern
+int internal_bell_on_ms = 500;
+int internal_bell_off_ms = 150;
 
 // 
 // Helper functions
@@ -121,7 +126,7 @@ void setup() {
 
     // Configure the bell
     pinMode(bell_out, OUTPUT);
-    digitalWrite(bell_out, HIGH);
+    digitalWrite(bell_out, LOW);
 
     // Configure builtin LED
     pinMode(LED_BUILTIN, OUTPUT);
@@ -145,6 +150,7 @@ void loop() {
     int last_on = 0;
     int timer = 0;
     const int led_timer_delay_ms = 4000;
+    int internal_last_on = 0;
 
     // const int internal_cycle_time_ms = 300;
 
@@ -178,6 +184,7 @@ void loop() {
         }
         else {
             // Nothing pressed
+            digitalWrite(bell_out, LOW);
             timer = millis();
             if (timer > (last_on + led_timer_delay_ms)) {
                 for (int i = 0; i < 8; i++) {
@@ -186,6 +193,9 @@ void loop() {
             }
         }
 
+        //
+        // Indicator LED control
+        //
         switch (which_input) {
             case front_door_in:
                 digitalWrite(front_door_out, HIGH);
@@ -213,6 +223,34 @@ void loop() {
                 break;
         }
 
+        // 
+        // Buzzer control
+        //
+        if (which_input > -1){
+            switch (which_input) {
+                case (front_door_in):
+                    digitalWrite(bell_out, HIGH);
+                    break;
+                case (side_door_in):
+                    digitalWrite(bell_out, HIGH);
+                    break;
+                default:
+                    // Do the pattern
+                    if (millis() < (internal_last_on+10000)){
+                        break;
+                    }
+                    digitalWrite(bell_out, HIGH);
+                    delay(internal_bell_on_ms);
+                    digitalWrite(bell_out, LOW);
+                    delay(internal_bell_off_ms);
+                    digitalWrite(bell_out, HIGH);
+                    delay(internal_bell_on_ms);
+                    digitalWrite(bell_out, LOW);
+                    delay(internal_bell_off_ms);
+                    internal_last_on = millis();
+                    break;
+            }
+        }
     }
     // delay(1000);
 }
