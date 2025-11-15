@@ -70,17 +70,16 @@ int* all_in(int* x) {
     for (int i = 0; i < 2; i++) {
         x[6 + i] = external_in[i];
     }
-    x[8] = all_in_det;
     return x;
 }
 
 int detect(void) {
     // Detects whether a button has been pressed and returns the pin number that was pressed
-    int inputs[9];
+    int inputs[8];
     all_in(inputs);
 
     int which_on = -1;
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 8; i++) {
         int val = digitalRead(inputs[i]);
         if (val == LOW) {
             which_on = inputs[i];
@@ -102,7 +101,7 @@ void setup() {
     pinMode(all_in_det, INPUT_PULLUP);
 
     // Configure all input pins
-    int x_in[9];
+    int x_in[8];
     all_in(x_in);
     for (int i = 0; i < 8; i++) {
         pinMode(x_in[i], INPUT_PULLUP);
@@ -122,7 +121,7 @@ void setup() {
 
     // Configure the bell
     pinMode(bell_out, OUTPUT);
-    digitalWrite(bell_out, LOW);
+    digitalWrite(bell_out, HIGH);
 
     // Configure builtin LED
     pinMode(LED_BUILTIN, OUTPUT);
@@ -143,10 +142,10 @@ void loop() {
     //int bellVal = digitalRead(bell_in);
 
     // Used to store output of millis(). Wraps after about 50 days.
-    int last_on = 0;
-    const int time_on = 6000;
+    // int last_on = 0;
+    // const int time_on = 6000;
 
-    const int internal_cycle_time_ms = 300;
+    // const int internal_cycle_time_ms = 300;
 
     // Populate array of all inputs
     int inputs[8];
@@ -156,16 +155,48 @@ void loop() {
     int outputs[8];
     all_out(outputs);
 
+    // digitalWrite(LED_BUILTIN, HIGH);
+    // for (int i = 0; i < 8; i++) {
+    //     digitalWrite(outputs[i], LOW);
+    // }
+
+    // delay(1000);
+
+    // digitalWrite(LED_BUILTIN, LOW);
+    // // for (int i = 0; i < 8; i++) {
+    // //     digitalWrite(outputs[i], HIGH);
+    // // }
+
     while (true) {
         int which_input = detect();
         Serial.println(which_input);
         delay(loop_delay_ms);
 
         switch (which_input) {
-            case all_in_det:
-                for (int i = 0; i < 8; i++) {
-                    digitalWrite(all_out[i], HIGH);
-                }
+            case front_door_in:
+                digitalWrite(front_door_out, HIGH);
+                break;
+            case side_door_in:
+                digitalWrite(side_door_out, HIGH);
+                break;
+            case kitchen_in:
+                digitalWrite(kitchen_out, HIGH);
+                break;
+            case living_room_in:
+                digitalWrite(living_room_out, HIGH);
+                break;
+            case b1_in:
+                digitalWrite(b1_out, HIGH);
+                break;
+            case b2_in:
+                digitalWrite(b2_out, HIGH);
+                break;
+            case b4_in:
+                digitalWrite(b4_out, HIGH);
+                break;
+            case bathroom_in:
+                digitalWrite(bathroom_out, HIGH);
+                break;
         }
 
         digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
@@ -173,4 +204,5 @@ void loop() {
         digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
         delay(250);                      // wait for a second
     }
+    // delay(1000);
 }
