@@ -122,129 +122,82 @@ void setup() {
 }
 
 void loop() {
-  //int sensorVal = digitalRead(all_in);
-  //int bellVal = digitalRead(bell_in);
+    // Desired funcitonality
 
-  // Used to store output of millis(). Wraps after about 50 days.
-  int last_on = 0;
-  const int time_on = 6000;
+    // If any switch is pushed then the corresponding light is illuminated and goes off after t_light_on_sec sec.
+    // If an external switch is pushed then the buzzer sounds for the length of time that the button is pushed.
+    // If an internal switch is pushed then the buzzer sounds for 2 sharp buzzes, and after that does not sound again for t_break_sec sec.
 
-  const int internal_cycle_time_ms = 300;
+    // There is a switch, internal_bell, that sets whether the internal bells sound.
+    // If that switch is off then buzzer for the internal bells does not sound.
+    //int sensorVal = digitalRead(all_in);
+    //int bellVal = digitalRead(bell_in);
 
-  int inputs[8];
-  all_in(inputs);
+    // Used to store output of millis(). Wraps after about 50 days.
+    int last_on = 0;
+    const int time_on = 6000;
 
-  int outputs[8];
-  all_out(outputs);
+    const int internal_cycle_time_ms = 300;
 
-  int internal_off = false;
-  // Serial.println("x")
+    // Populate array of all inputs
+    int inputs[8];
+    all_in(inputs);
 
-  while (true) {
+    // Populate array of all outputs
+    int outputs[8];
+    all_out(outputs);
 
-    // int y = 0;
-    // for (int i = 22; i<=29; i++) {
-    //   int x = digitalRead(i);
-    //   y = y or (not x);
-    // }
+    int internal_off = false;
+    // Serial.println("x")
 
-    // Serial.println(y);
+    while (true) {
 
     int which_input = detect();
 
     Serial.println(which_input);
 
-    if (which_input == -1) {
-      // If nothing is pressed, make sure bell is off
-      digitalWrite(bell_out, LOW);
-      // delay(500);
-    } else {
-      last_on = millis();
-    }
-
-    if (last_on > time_on) {
-      // TODO need to think through this logic.
-      Serial.println("Off active");
-      for (int i = 0; i < 8; i++) {
-        digitalWrite(outputs[i], LOW);
-        internal_off = true;
-      }
-      digitalWrite(bell_out, LOW);
-    }
-
     switch (which_input) {
-      case front_door_in:
-        digitalWrite(front_door_out, HIGH);
-        break;
-      case side_door_in:
-        digitalWrite(side_door_out, HIGH);
-        break;
-      case kitchen_in:
-        digitalWrite(kitchen_out, HIGH);
-        break;
-      case living_room_in:
-        digitalWrite(living_room_out, HIGH);
-        break;
-      case b1_in:
-        digitalWrite(b1_out, HIGH);
-        break;
-      case b2_in:
-        digitalWrite(b2_out, HIGH);
-        break;
-      case b4_in:
-        digitalWrite(b4_out, HIGH);
-        break;
-      case bathroom_in:
-        digitalWrite(bathroom_out, HIGH);
-        break;
+        case front_door_in:
+            digitalWrite(front_door_out, HIGH);
+            break;
+        case side_door_in:
+            digitalWrite(side_door_out, HIGH);
+            break;
+        case kitchen_in:
+            digitalWrite(kitchen_out, HIGH);
+            break;
+        case living_room_in:
+            digitalWrite(living_room_out, HIGH);
+            break;
+        case b1_in:
+            digitalWrite(b1_out, HIGH);
+            break;
+        case b2_in:
+            digitalWrite(b2_out, HIGH);
+            break;
+        case b4_in:
+            digitalWrite(b4_out, HIGH);
+            break;
+        case bathroom_in:
+            digitalWrite(bathroom_out, HIGH);
+            break;
     }
 
     if (which_input > -1) {
-      // Something has been pressed
-      if (which_input == front_door_in || which_input == side_door_in) {
-        digitalWrite(bell_out, HIGH);
-        // delay(1000);
-      } else {
-        digitalWrite(bell_out, HIGH);
-        delay(internal_cycle_time_ms);
-        digitalWrite(bell_out, LOW);
-        delay(internal_cycle_time_ms);
-        digitalWrite(bell_out, HIGH);
-        delay(internal_cycle_time_ms);
-        digitalWrite(bell_out, LOW);
-      }
+        // Something has been pressed
+        if (which_input == front_door_in || which_input == side_door_in) {
+            digitalWrite(bell_out, HIGH);
+            // delay(1000);
+        } else {
+            digitalWrite(bell_out, HIGH);
+            delay(internal_cycle_time_ms);
+            digitalWrite(bell_out, LOW);
+            delay(internal_cycle_time_ms);
+            digitalWrite(bell_out, HIGH);
+            delay(internal_cycle_time_ms);
+            digitalWrite(bell_out, LOW);
+        }
     }
-
-
-    // if (sensorVal == HIGH) {
-    //   for (int i = 2; i <= 9; i++) {
-    //     digitalWrite(i, LOW);
-    //   }
-    // } else {
-    //   for (int i = 2; i <= 9; i++) {
-    //     digitalWrite(i, HIGH);
-    //   }
-    // }
-
-    // if (bellVal == HIGH) {
-    //   digitalWrite(bell_out, LOW);
-    // } else {
-    //   digitalWrite(bell_out, HIGH);
-    // }
-
-
-
-    // if (y) {
-    //     for (int i = 0; i < 8; i++) {
-    //       digitalWrite(uu[i], LOW);
-    //     }
-    //     digitalWrite(bell_out, LOW);
-    //   } else {
-    //     for (int i = 0; i < 8; i++) {
-    //       digitalWrite(uu[i], HIGH);
-    //     }
-    //     digitalWrite(bell_out, HIGH);
-    //   }
 
     delay(500);
   }
