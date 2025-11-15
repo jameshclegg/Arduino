@@ -142,7 +142,8 @@ void loop() {
     //int bellVal = digitalRead(bell_in);
 
     // Used to store output of millis(). Wraps after about 50 days.
-    // int last_on = 0;
+    int last_on = 0;
+    int timer = 0;
     // const int time_on = 6000;
 
     // const int internal_cycle_time_ms = 300;
@@ -173,6 +174,11 @@ void loop() {
         delay(loop_delay_ms);
 
         switch (which_input) {
+            case -1:
+                for (int i = 0; i < 8; i++) {
+                    digitalWrite(outputs[i], LOW);
+                }
+                break;
             case front_door_in:
                 digitalWrite(front_door_out, HIGH);
                 break;
@@ -199,10 +205,12 @@ void loop() {
                 break;
         }
 
-        digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-        delay(250);                      // wait for a second
-        digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
-        delay(250);                      // wait for a second
+
+
+        // digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+        // delay(250);                      // wait for a second
+        // digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+        // delay(250);                      // wait for a second
     }
     // delay(1000);
 }
