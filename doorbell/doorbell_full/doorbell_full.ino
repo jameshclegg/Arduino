@@ -24,7 +24,7 @@ int external_out[2] = {front_door_out, side_door_out};
 //
 
 // A pin that can be used to switch on all lights for testing
-int all_in_det = 21;
+const int all_in_det = 35;
 
 // These are the pin numbers for the inputs (connected to bell pushes)
 const int front_door_in = 22;
@@ -41,6 +41,11 @@ int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_
 
 // All external inputs
 int external_in[2] = {front_door_in, side_door_in};
+
+// 
+// Other constants
+//
+int loop_delay_ms = 300;
 
 // 
 // Helper functions
@@ -77,7 +82,7 @@ int detect(void) {
     for (int i = 0; i < 8; i++) {
         int val = digitalRead(inputs[i]);
         if (val == LOW) {
-        which_on = inputs[i];
+            which_on = inputs[i];
         }
     }
 
@@ -116,7 +121,10 @@ void setup() {
 
     // Configure the bell
     pinMode(bell_out, OUTPUT);
-    digitalWrite(bell_out, LOW);
+    digitalWrite(bell_out, HIGH);
+
+    // Configure builtin LED
+    pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.println("setup done");
 }
@@ -135,9 +143,10 @@ void loop() {
 
     // Used to store output of millis(). Wraps after about 50 days.
     int last_on = 0;
-    const int time_on = 6000;
+    int timer = 0;
+    const int led_timer_delay_ms = 4000;
 
-    const int internal_cycle_time_ms = 300;
+    // const int internal_cycle_time_ms = 300;
 
     // Populate array of all inputs
     int inputs[8];
@@ -147,58 +156,63 @@ void loop() {
     int outputs[8];
     all_out(outputs);
 
-    int internal_off = false;
-    // Serial.println("x")
+    // digitalWrite(LED_BUILTIN, HIGH);
+    // for (int i = 0; i < 8; i++) {
+    //     digitalWrite(outputs[i], LOW);
+    // }
+
+    // delay(1000);
+
+    // digitalWrite(LED_BUILTIN, LOW);
+    // // for (int i = 0; i < 8; i++) {
+    // //     digitalWrite(outputs[i], HIGH);
+    // // }
 
     while (true) {
+        int which_input = detect();
+        Serial.println(which_input);
+        delay(loop_delay_ms);
 
-    int which_input = detect();
-
-    Serial.println(which_input);
-
-    switch (which_input) {
-        case front_door_in:
-            digitalWrite(front_door_out, HIGH);
-            break;
-        case side_door_in:
-            digitalWrite(side_door_out, HIGH);
-            break;
-        case kitchen_in:
-            digitalWrite(kitchen_out, HIGH);
-            break;
-        case living_room_in:
-            digitalWrite(living_room_out, HIGH);
-            break;
-        case b1_in:
-            digitalWrite(b1_out, HIGH);
-            break;
-        case b2_in:
-            digitalWrite(b2_out, HIGH);
-            break;
-        case b4_in:
-            digitalWrite(b4_out, HIGH);
-            break;
-        case bathroom_in:
-            digitalWrite(bathroom_out, HIGH);
-            break;
-    }
-
-    if (which_input > -1) {
-        // Something has been pressed
-        if (which_input == front_door_in || which_input == side_door_in) {
-            digitalWrite(bell_out, HIGH);
-            // delay(1000);
-        } else {
-            digitalWrite(bell_out, HIGH);
-            delay(internal_cycle_time_ms);
-            digitalWrite(bell_out, LOW);
-            delay(internal_cycle_time_ms);
-            digitalWrite(bell_out, HIGH);
-            delay(internal_cycle_time_ms);
-            digitalWrite(bell_out, LOW);
+        if (which_input > -1){
+            last_on = millis();
         }
-    }
+        else {
+            // Nothing pressed
+            timer = millis();
+            if (timer > (last_on + led_timer_delay_ms)) {
+                for (int i = 0; i < 8; i++) {
+                    digitalWrite(outputs[i], LOW);
+                }
+            }
+        }
 
-    delay(500);
-  }
+        switch (which_input) {
+            case front_door_in:
+                digitalWrite(front_door_out, HIGH);
+                break;
+            case side_door_in:
+                digitalWrite(side_door_out, HIGH);
+                break;
+            case kitchen_in:
+                digitalWrite(kitchen_out, HIGH);
+                break;
+            case living_room_in:
+                digitalWrite(living_room_out, HIGH);
+                break;
+            case b1_in:
+                digitalWrite(b1_out, HIGH);
+                break;
+            case b2_in:
+                digitalWrite(b2_out, HIGH);
+                break;
+            case b4_in:
+                digitalWrite(b4_out, HIGH);
+                break;
+            case bathroom_in:
+                digitalWrite(bathroom_out, HIGH);
+                break;
+        }
+
+    }
+    // delay(1000);
 }
