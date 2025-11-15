@@ -1,6 +1,9 @@
 
+//
+// OUTPUT PINS
+//
 // These are the pin numbers for the outputs (lights and bell)
-int bell_out = 40;
+int bell_out = 32;
 int front_door_out = 46;
 int side_door_out = 47;
 int kitchen_out = 48;
@@ -10,11 +13,17 @@ int b2_out = 51;
 int b4_out = 52; // this is labelled bedroom 3 on the unit
 int bathroom_out = 53;
 
-//int n_ext = 6;
-//int n_int = 2;
+// Lights that are internal
 int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
+
+// Lights that are external
 int external_out[2] = {front_door_out, side_door_out};
 
+//
+// INPUT PINS
+//
+
+// A pin that can be used to switch on all lights for testing
 int all_in_det = 21;
 
 // These are the pin numbers for the inputs (connected to bell pushes)
@@ -27,75 +36,92 @@ const int b2_in = 27;
 const int b4_in = 28;
 const int bathroom_in = 29;
 
+// All internal inputs
 int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in};
+
+// All external inputs
 int external_in[2] = {front_door_in, side_door_in};
 
+// 
+// Helper functions
+//
+
 int* all_out(int* x) {
-  for (int i = 0; i < 6; i++) {
-    x[i] = internal_out[i];
-  }
-  for (int i = 0; i < 2; i++) {
-    x[6 + i] = external_out[i];
-  }
-  return x;
+    // Returns all outputs
+    for (int i = 0; i < 6; i++) {
+        x[i] = internal_out[i];
+    }
+    for (int i = 0; i < 2; i++) {
+        x[6 + i] = external_out[i];
+    }
+    return x;
 }
 
 int* all_in(int* x) {
-  for (int i = 0; i < 6; i++) {
-    x[i] = internal_in[i];
-  }
-  for (int i = 0; i < 2; i++) {
-    x[6 + i] = external_in[i];
-  }
-  return x;
+    // Returns all inputs
+    for (int i = 0; i < 6; i++) {
+        x[i] = internal_in[i];
+    }
+    for (int i = 0; i < 2; i++) {
+        x[6 + i] = external_in[i];
+    }
+    return x;
 }
 
 int detect(void) {
+    // Detects whether a button has been pressed and returns the pin number that was pressed
+    int inputs[8];
+    all_in(inputs);
 
-  int inputs[8];
-  all_in(inputs);
-
-  int which_on = -1;
-  for (int i = 0; i < 8; i++) {
-    int val = digitalRead(inputs[i]);
-    if (val == LOW) {
-      which_on = inputs[i];
+    int which_on = -1;
+    for (int i = 0; i < 8; i++) {
+        int val = digitalRead(inputs[i]);
+        if (val == LOW) {
+        which_on = inputs[i];
+        }
     }
-  }
 
-  return which_on;
+    return which_on;
 }
 
 void setup() {
-  // put your setup code here, to run once:
-  // start serial connection
-  Serial.begin(9600);
+    // start serial connection
+    Serial.begin(9600);
 
-  // Configure inputs
-  pinMode(all_in_det, INPUT_PULLUP);
+    //
+    // Configure inputs
+    //
 
-  int x_in[8];
-  all_in(x_in);
-  for (int i = 0; i < 8; i++) {
-    pinMode(x_in[i], INPUT_PULLUP);
-  }
+    // Configure the test pin
+    pinMode(all_in_det, INPUT_PULLUP);
 
-  // configure outputs
-  int x_out[8];
-  all_out(x_out);
-  for (int i = 0; i < 8; i++) {
-    pinMode(x_out[i], OUTPUT);
-    digitalWrite(x_out[i], LOW);
-  }
+    // Configure all input pins
+    int x_in[8];
+    all_in(x_in);
+    for (int i = 0; i < 8; i++) {
+        pinMode(x_in[i], INPUT_PULLUP);
+    }
 
-  pinMode(bell_out, OUTPUT);
-  digitalWrite(bell_out, LOW);
+    //
+    // Configure outputs
+    //
 
-  Serial.println("setup done");
+    // Configure all light output pins
+    int x_out[8];
+    all_out(x_out);
+    for (int i = 0; i < 8; i++) {
+        pinMode(x_out[i], OUTPUT);
+        digitalWrite(x_out[i], LOW);
+    }
+
+    // Configure the bell
+    pinMode(bell_out, OUTPUT);
+    digitalWrite(bell_out, LOW);
+
+    Serial.println("setup done");
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   //int sensorVal = digitalRead(all_in);
   //int bellVal = digitalRead(bell_in);
 
