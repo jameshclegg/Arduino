@@ -24,7 +24,7 @@ int external_out[2] = {front_door_out, side_door_out};
 //
 
 // A pin that can be used to switch on all lights for testing
-int all_in_det = 21;
+const int all_in_det = 35;
 
 // These are the pin numbers for the inputs (connected to bell pushes)
 const int front_door_in = 22;
@@ -70,19 +70,20 @@ int* all_in(int* x) {
     for (int i = 0; i < 2; i++) {
         x[6 + i] = external_in[i];
     }
+    x[8] = all_in_det;
     return x;
 }
 
 int detect(void) {
     // Detects whether a button has been pressed and returns the pin number that was pressed
-    int inputs[8];
+    int inputs[9];
     all_in(inputs);
 
     int which_on = -1;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 9; i++) {
         int val = digitalRead(inputs[i]);
         if (val == LOW) {
-        which_on = inputs[i];
+            which_on = inputs[i];
         }
     }
 
@@ -101,7 +102,7 @@ void setup() {
     pinMode(all_in_det, INPUT_PULLUP);
 
     // Configure all input pins
-    int x_in[8];
+    int x_in[9];
     all_in(x_in);
     for (int i = 0; i < 8; i++) {
         pinMode(x_in[i], INPUT_PULLUP);
@@ -122,6 +123,9 @@ void setup() {
     // Configure the bell
     pinMode(bell_out, OUTPUT);
     digitalWrite(bell_out, LOW);
+
+    // Configure builtin LED
+    pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.println("setup done");
 }
@@ -152,46 +156,21 @@ void loop() {
     int outputs[8];
     all_out(outputs);
 
-    int internal_off = false;
-    // Serial.println("x")
-
     while (true) {
+        int which_input = detect();
+        Serial.println(which_input);
+        delay(loop_delay_ms);
 
-    int which_input = detect();
+        switch (which_input) {
+            case all_in_det:
+                for (int i = 0; i < 8; i++) {
+                    digitalWrite(all_out[i], HIGH);
+                }
+        }
 
-    Serial.println(which_input);
-
-    switch (which_input) {
-        case front_door_in:
-            digitalWrite(front_door_out, HIGH);
-            break;
-        case side_door_in:
-            digitalWrite(side_door_out, HIGH);
-            break;
-        case kitchen_in:
-            digitalWrite(kitchen_out, HIGH);
-            break;
-        case living_room_in:
-            digitalWrite(living_room_out, HIGH);
-            break;
-        case b1_in:
-            digitalWrite(b1_out, HIGH);
-            break;
-        case b2_in:
-            digitalWrite(b2_out, HIGH);
-            break;
-        case b4_in:
-            digitalWrite(b4_out, HIGH);
-            break;
-        case bathroom_in:
-            digitalWrite(bathroom_out, HIGH);
-            break;
+        digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+        delay(250);                      // wait for a second
+        digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+        delay(250);                      // wait for a second
     }
-
-    if (which_input > -1) {
-        // This code will deal with buzzer operation
-    }
-
-    delay(loop_delay_ms);
-  }
 }
