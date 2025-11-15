@@ -43,6 +43,11 @@ int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_
 int external_in[2] = {front_door_in, side_door_in};
 
 // 
+// Other constants
+//
+int loop_delay_ms = 300
+
+// 
 // Helper functions
 //
 
@@ -184,21 +189,9 @@ void loop() {
     }
 
     if (which_input > -1) {
-        // Something has been pressed
-        if (which_input == front_door_in || which_input == side_door_in) {
-            digitalWrite(bell_out, HIGH);
-            // delay(1000);
-        } else {
-            digitalWrite(bell_out, HIGH);
-            delay(internal_cycle_time_ms);
-            digitalWrite(bell_out, LOW);
-            delay(internal_cycle_time_ms);
-            digitalWrite(bell_out, HIGH);
-            delay(internal_cycle_time_ms);
-            digitalWrite(bell_out, LOW);
-        }
+        // This code will deal with buzzer operation
     }
 
-    delay(500);
+    delay(loop_delay_ms);
   }
 }
