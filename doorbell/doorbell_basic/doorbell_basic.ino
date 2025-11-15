@@ -45,7 +45,7 @@ int external_in[2] = {front_door_in, side_door_in};
 // 
 // Other constants
 //
-int loop_delay_ms = 300
+int loop_delay_ms = 300;
 
 // 
 // Helper functions
