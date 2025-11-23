@@ -154,11 +154,7 @@ void loop() {
     // Used to store output of millis(). Wraps after about 50 days.
     int last_on_ms = 0;
     int light_timer_ms = 0;
-
-
     int internal_last_on_ms = 0;
-
-    // const int internal_cycle_time_ms = 300;
 
     // Populate array of all inputs
     int inputs[8];
@@ -170,9 +166,9 @@ void loop() {
 
 
     while (true) {
-        int which_input = detect();
-        // Serial.println(which_input);
         delay(loop_delay_ms);
+
+        int which_input = detect();
 
         if (which_input > -1){
             // Something pressed - start the clock
@@ -257,5 +253,4 @@ void loop() {
             }
         }
     }
-    // delay(1000);
 }
