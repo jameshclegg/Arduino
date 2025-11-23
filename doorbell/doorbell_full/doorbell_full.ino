@@ -55,6 +55,12 @@ const int loop_delay_ms = 100;
 const int internal_bell_on_ms = 500;
 const int internal_bell_off_ms = 150;
 
+// Sets how long the LEDs stay on after the last button is pushed
+const int led_timer_delay_ms = 4000;
+
+// Sets how long the buzzer is blocked for after an internal bell is pushed
+const int internal_block_ms = 10000;
+
 // 
 // Helper functions
 //
@@ -146,10 +152,10 @@ void loop() {
     // If that switch is off then buzzer for the internal bells does not sound.
 
     // Used to store output of millis(). Wraps after about 50 days.
-    int last_on = 0;
-    int timer = 0;
-    const int led_timer_delay_ms = 4000;
-    const int internal_block_ms = 10000;
+    int last_on_ms = 0;
+    int light_timer_ms = 0;
+
+
     int internal_last_on_ms = 0;
 
     // const int internal_cycle_time_ms = 300;
@@ -169,13 +175,16 @@ void loop() {
         delay(loop_delay_ms);
 
         if (which_input > -1){
-            last_on = millis();
+            // Something pressed - start the clock
+            last_on_ms = millis();
         }
         else {
-            // Nothing pressed
+            // Nothing pressed - switch bell off
             digitalWrite(bell_out, LOW);
-            timer = millis();
-            if (timer > (last_on + led_timer_delay_ms)) {
+
+            // Switch all lights off after some time
+            light_timer_ms = millis();
+            if (light_timer_ms > (last_on_ms + led_timer_delay_ms)) {
                 for (int i = 0; i < 8; i++) {
                     digitalWrite(outputs[i], LOW);
                 }
