@@ -3,15 +3,15 @@
 // OUTPUT PINS
 //
 // These are the pin numbers for the outputs (lights and bell)
-int bell_out = 32;
-int front_door_out = 46;
-int side_door_out = 47;
-int kitchen_out = 48;
-int living_room_out = 49;
-int b1_out = 50;
-int b2_out = 51;
-int b4_out = 52; // this is labelled bedroom 3 on the unit
-int bathroom_out = 53;
+const int bell_out = 32;
+const int front_door_out = 46;
+const int side_door_out = 47;
+const int kitchen_out = 48;
+const int living_room_out = 49;
+const int b1_out = 50;
+const int b2_out = 51;
+const int b4_out = 52; // this is labelled bedroom 3 on the unit
+const int bathroom_out = 53;
 
 // Lights that are internal
 int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
