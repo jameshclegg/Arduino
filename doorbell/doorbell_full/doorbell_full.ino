@@ -60,7 +60,7 @@ const int internal_bell_off_ms = 150;
 //
 
 void all_out(int* x) {
-    // Returns all outputs
+    // Fills in all ouputs in x
     for (int i = 0; i < 6; i++) {
         x[i] = internal_out[i];
     }
@@ -70,7 +70,7 @@ void all_out(int* x) {
 }
 
 void all_in(int* x) {
-    // Returns all inputs
+    // Fills in all inputs in x
     for (int i = 0; i < 6; i++) {
         x[i] = internal_in[i];
     }
@@ -150,7 +150,7 @@ void loop() {
     int timer = 0;
     const int led_timer_delay_ms = 4000;
     const int internal_block_ms = 10000;
-    int internal_last_on = 0;
+    int internal_last_on_ms = 0;
 
     // const int internal_cycle_time_ms = 300;
 
@@ -162,17 +162,6 @@ void loop() {
     int outputs[8];
     all_out(outputs);
 
-    // digitalWrite(LED_BUILTIN, HIGH);
-    // for (int i = 0; i < 8; i++) {
-    //     digitalWrite(outputs[i], LOW);
-    // }
-
-    // delay(1000);
-
-    // digitalWrite(LED_BUILTIN, LOW);
-    // // for (int i = 0; i < 8; i++) {
-    // //     digitalWrite(outputs[i], HIGH);
-    // // }
 
     while (true) {
         int which_input = detect();
@@ -243,7 +232,7 @@ void loop() {
                         break;
                     }
                     // Do the pattern
-                    if (millis() < (internal_last_on+internal_block_ms)){
+                    if (millis() < (internal_last_on_ms+internal_block_ms)){
                         break;
                     }
                     digitalWrite(bell_out, HIGH);
@@ -254,7 +243,7 @@ void loop() {
                     delay(internal_bell_on_ms);
                     digitalWrite(bell_out, LOW);
                     delay(internal_bell_off_ms);
-                    internal_last_on = millis();
+                    internal_last_on_ms = millis();
                     break;
             }
         }
