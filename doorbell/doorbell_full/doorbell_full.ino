@@ -14,10 +14,10 @@ const int b4_out = 52; // this is labelled bedroom 3 on the unit
 const int bathroom_out = 53;
 
 // Lights that are internal
-int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
+const int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
 
 // Lights that are external
-int external_out[2] = {front_door_out, side_door_out};
+const int external_out[2] = {front_door_out, side_door_out};
 
 //
 // INPUT PINS
@@ -40,10 +40,10 @@ const int bathroom_in = 29;
 const int internal_insolation_in = 38;
 
 // All internal inputs
-int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in};
+const int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in};
 
 // All external inputs
-int external_in[2] = {front_door_in, side_door_in};
+const int external_in[2] = {front_door_in, side_door_in};
 
 // 
 // Other constants
