@@ -36,6 +36,9 @@ const int b2_in = 27;
 const int b4_in = 28;
 const int bathroom_in = 29;
 
+// Internal isolation switch
+const int internal_insolation_in = 38;
+
 // All internal inputs
 int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in};
 
@@ -56,26 +59,24 @@ const int internal_bell_off_ms = 150;
 // Helper functions
 //
 
-int* all_out(int* x) {
-    // Returns all outputs
+void all_out(int* x) {
+    // Fills in all outputs in x
     for (int i = 0; i < 6; i++) {
         x[i] = internal_out[i];
     }
     for (int i = 0; i < 2; i++) {
         x[6 + i] = external_out[i];
     }
-    return x;
 }
 
-int* all_in(int* x) {
-    // Returns all inputs
+void all_in(int* x) {
+    // Fills in all inputs in x
     for (int i = 0; i < 6; i++) {
         x[i] = internal_in[i];
     }
     for (int i = 0; i < 2; i++) {
         x[6 + i] = external_in[i];
     }
-    return x;
 }
 
 int detect(void) {
@@ -165,7 +166,7 @@ void loop() {
 
     while (true) {
         int which_input = detect();
-        Serial.println(which_input);
+        // Serial.println(which_input);
         delay(loop_delay_ms);
 
         if (which_input > -1){
@@ -224,9 +225,24 @@ void loop() {
                     digitalWrite(bell_out, HIGH);
                     break;
                 default:
+                    // int int_val = digitalRead(internal_insolation_in);
+                    // Serial.println(int_val);
+                    // if (!int_val) {
+                    //     // No buzzer if this switch is off
+                    //     Serial.println("in here");
+                    //     break;
+                    // }
                     // Do the pattern
-                    time_limit_ms = internal_last_on_ms + internal_block_ms;
-                    if (millis() < time_limit_ms){
+                    // int time_limit_ms = internal_last_on_ms + internal_block_ms;
+                    // if (millis() < (internal_last_on_ms + 10000)){
+                        
+                    //     break;
+                    // }
+                    Serial.print(millis());
+                    Serial.print("    ");
+                    Serial.print(internal_last_on_ms+10000);
+                    if (millis() < (internal_last_on_ms+10000)){
+                        Serial.println("time lim");
                         break;
                     }
                     digitalWrite(bell_out, HIGH);
