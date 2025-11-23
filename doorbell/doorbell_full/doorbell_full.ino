@@ -3,15 +3,16 @@
 // OUTPUT PINS
 //
 // These are the pin numbers for the outputs (lights and bell)
-const int bell_out = 32;
-const int front_door_out = 46;
-const int side_door_out = 47;
-const int kitchen_out = 48;
-const int living_room_out = 49;
-const int b1_out = 50;
-const int b2_out = 51;
-const int b4_out = 52; // this is labelled bedroom 3 on the unit
-const int bathroom_out = 53;
+// Colours represent jumper wires.
+const int bell_out = 32;        // red
+const int front_door_out = 46;  // purple
+const int side_door_out = 47;   // white
+const int kitchen_out = 48;     // lt grey (almost white)
+const int living_room_out = 49; // black
+const int b1_out = 50;          // orange
+const int b2_out = 51;          // yellow
+const int b4_out = 52;          // green (this is labelled bedroom 3 on the unit)
+const int bathroom_out = 53;    // blue
 
 // Lights that are internal
 const int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
