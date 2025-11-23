@@ -3,15 +3,15 @@
 // OUTPUT PINS
 //
 // These are the pin numbers for the outputs (lights and bell)
-const int bell_out = 32;
-const int front_door_out = 46;
-const int side_door_out = 47;
-const int kitchen_out = 48;
-const int living_room_out = 49;
-const int b1_out = 50;
-const int b2_out = 51;
-const int b4_out = 52; // this is labelled bedroom 3 on the unit
-const int bathroom_out = 53;
+int bell_out = 32;
+int front_door_out = 46;
+int side_door_out = 47;
+int kitchen_out = 48;
+int living_room_out = 49;
+int b1_out = 50;
+int b2_out = 51;
+int b4_out = 52; // this is labelled bedroom 3 on the unit
+int bathroom_out = 53;
 
 // Lights that are internal
 int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
@@ -60,7 +60,7 @@ const int internal_bell_off_ms = 150;
 //
 
 void all_out(int* x) {
-    // Fills in all outputs in x
+    // Returns all outputs
     for (int i = 0; i < 6; i++) {
         x[i] = internal_out[i];
     }
@@ -70,7 +70,7 @@ void all_out(int* x) {
 }
 
 void all_in(int* x) {
-    // Fills in all inputs in x
+    // Returns all inputs
     for (int i = 0; i < 6; i++) {
         x[i] = internal_in[i];
     }
@@ -144,15 +144,13 @@ void loop() {
 
     // There is a switch, internal_bell, that sets whether the internal bells sound.
     // If that switch is off then buzzer for the internal bells does not sound.
-    //int sensorVal = digitalRead(all_in);
-    //int bellVal = digitalRead(bell_in);
 
     // Used to store output of millis(). Wraps after about 50 days.
     int last_on = 0;
     int timer = 0;
     const int led_timer_delay_ms = 4000;
     const int internal_block_ms = 10000;
-    int internal_last_on_ms = 0;
+    int internal_last_on = 0;
 
     // const int internal_cycle_time_ms = 300;
 
@@ -163,6 +161,18 @@ void loop() {
     // Populate array of all outputs
     int outputs[8];
     all_out(outputs);
+
+    // digitalWrite(LED_BUILTIN, HIGH);
+    // for (int i = 0; i < 8; i++) {
+    //     digitalWrite(outputs[i], LOW);
+    // }
+
+    // delay(1000);
+
+    // digitalWrite(LED_BUILTIN, LOW);
+    // // for (int i = 0; i < 8; i++) {
+    // //     digitalWrite(outputs[i], HIGH);
+    // // }
 
     while (true) {
         int which_input = detect();
@@ -225,24 +235,15 @@ void loop() {
                     digitalWrite(bell_out, HIGH);
                     break;
                 default:
-                    // int int_val = digitalRead(internal_insolation_in);
+                    int int_val = digitalRead(internal_insolation_in);
                     // Serial.println(int_val);
-                    // if (!int_val) {
-                    //     // No buzzer if this switch is off
-                    //     Serial.println("in here");
-                    //     break;
-                    // }
+                    if (!int_val) {
+                        // No buzzer if this switch is off
+                        // Serial.println("in here");
+                        break;
+                    }
                     // Do the pattern
-                    // int time_limit_ms = internal_last_on_ms + internal_block_ms;
-                    // if (millis() < (internal_last_on_ms + 10000)){
-                        
-                    //     break;
-                    // }
-                    Serial.print(millis());
-                    Serial.print("    ");
-                    Serial.print(internal_last_on_ms+10000);
-                    if (millis() < (internal_last_on_ms+10000)){
-                        Serial.println("time lim");
+                    if (millis() < (internal_last_on+internal_block_ms)){
                         break;
                     }
                     digitalWrite(bell_out, HIGH);
@@ -253,7 +254,7 @@ void loop() {
                     delay(internal_bell_on_ms);
                     digitalWrite(bell_out, LOW);
                     delay(internal_bell_off_ms);
-                    internal_last_on_ms = millis();
+                    internal_last_on = millis();
                     break;
             }
         }
