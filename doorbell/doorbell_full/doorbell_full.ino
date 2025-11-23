@@ -230,14 +230,13 @@ void loop() {
                     break;
                 default:
                     int int_val = digitalRead(internal_insolation_in);
-                    // Serial.println(int_val);
                     if (!int_val) {
                         // No buzzer if this switch is off
-                        // Serial.println("in here");
                         break;
                     }
                     // Do the pattern
                     if (millis() < (internal_last_on_ms+internal_block_ms)){
+                        // Too soon after last time an internal button was pushed: don't sound buzzer.
                         break;
                     }
                     digitalWrite(bell_out, HIGH);
