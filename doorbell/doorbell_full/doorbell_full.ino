@@ -29,7 +29,7 @@ const int all_in_det = 35;
 
 // These are the pin numbers for the inputs (connected to bell pushes)
 const int front_door_in = 22;   // purple
-const int side_door_in = 23;
+const int side_door_in = 23;    // white, not working?
 const int kitchen_in = 24;      // lt grey
 const int living_room_in = 25;  // black
 const int b1_in = 26;           // orange
