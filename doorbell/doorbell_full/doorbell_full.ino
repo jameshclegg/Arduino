@@ -28,14 +28,14 @@ const int external_out[2] = {front_door_out, side_door_out};
 const int all_in_det = 35;
 
 // These are the pin numbers for the inputs (connected to bell pushes)
-const int front_door_in = 22;
+const int front_door_in = 22;   // purple
 const int side_door_in = 23;
-const int kitchen_in = 24;
-const int living_room_in = 25;
-const int b1_in = 26;
-const int b2_in = 27;
-const int b4_in = 28;
-const int bathroom_in = 29;
+const int kitchen_in = 24;      // lt grey
+const int living_room_in = 25;  // black
+const int b1_in = 26;           // orange
+const int b2_in = 27;           // yellow
+const int b4_in = 28;           // green
+const int bathroom_in = 29;     // blue
 
 // Internal isolation switch
 const int internal_insolation_in = 38;
