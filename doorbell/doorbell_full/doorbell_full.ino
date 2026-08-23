@@ -224,6 +224,7 @@ void loop() {
         // 
         // Buzzer control
         //
+        digitalWrite(bell_out, LOW);
         if (which_input > -1){
             switch (which_input) {
                 case (front_door_in):
