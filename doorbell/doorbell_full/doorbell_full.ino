@@ -170,6 +170,7 @@ void loop() {
     bool internal_bell_has_sounded = false;
     InternalBellStage internal_bell_stage = INTERNAL_BELL_IDLE;
     unsigned long internal_bell_stage_started_ms = 0;
+    bool internal_input_was_pressed = false;
 
     // Populate array of all inputs
     int inputs[8];
@@ -185,6 +186,13 @@ void loop() {
 
         unsigned long now_ms = millis();
         int which_input = detect();
+        bool internal_input_pressed = false;
+        for (int i = 0; i < 6; i++) {
+            if (digitalRead(internal_in[i]) == LOW) {
+                internal_input_pressed = true;
+            }
+        }
+        bool internal_press_started = internal_input_pressed && !internal_input_was_pressed;
 
         if (which_input > -1){
             // Something pressed - start the clock
@@ -277,6 +285,9 @@ void loop() {
                     bell_on = true;
                     break;
                 default:
+                    if (!internal_press_started) {
+                        break;
+                    }
                     int int_val = digitalRead(internal_insolation_in);
                     if (!int_val) {
                         // No buzzer if this switch is off
@@ -295,5 +306,6 @@ void loop() {
             }
         }
         digitalWrite(bell_out, bell_on ? HIGH : LOW);
+        internal_input_was_pressed = internal_input_pressed;
     }
 }
