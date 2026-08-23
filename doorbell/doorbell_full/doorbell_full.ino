@@ -173,6 +173,7 @@ void loop() {
         bool any_input_pressed = false;
         bool internal_press_started = false;
         bool external_input_pressed = false;
+        bool test_input_pressed = digitalRead(all_in_det) == LOW;
         for (int i = 0; i < 8; i++) {
             input_pressed[i] = digitalRead(inputs[i]) == LOW;
             if (input_pressed[i]) {
@@ -185,6 +186,7 @@ void loop() {
                 }
             }
         }
+        any_input_pressed = any_input_pressed || test_input_pressed;
 
         if (any_input_pressed){
             // Something pressed - start the clock
@@ -207,7 +209,7 @@ void loop() {
         // Indicator LED control
         //
         for (int i = 0; i < 8; i++) {
-            if (input_pressed[i]) {
+            if (input_pressed[i] || test_input_pressed) {
                 digitalWrite(outputs[i], HIGH);
             }
         }
