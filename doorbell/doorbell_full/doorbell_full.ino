@@ -38,7 +38,7 @@ const int b4_in = 28;           // green
 const int bathroom_in = 29;     // blue
 
 // Internal isolation switch
-const int internal_insolation_in = 38;
+const int internal_isolation_in = 38;
 
 // All internal inputs
 const int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in};
@@ -75,7 +75,7 @@ enum InternalBellStage {
 //
 
 void all_out(int* x) {
-    // Fills in all ouputs in x
+    // Fills in all outputs in x
     for (int i = 0; i < 6; i++) {
         x[i] = internal_out[i];
     }
@@ -106,7 +106,7 @@ void setup() {
     pinMode(all_in_det, INPUT_PULLUP);
 
     // Configure the internal isolation switch
-    pinMode(internal_insolation_in, INPUT_PULLUP);
+    pinMode(internal_isolation_in, INPUT_PULLUP);
 
     // Configure all input pins
     int x_in[8];
@@ -138,7 +138,7 @@ void setup() {
 }
 
 void loop() {
-    // Desired funcitonality
+    // Desired functionality
 
     // If any switch is pushed then the corresponding light is illuminated and goes off after t_light_on_sec sec.
     // If an external switch is pushed then the buzzer sounds for the length of time that the button is pushed.
@@ -251,7 +251,7 @@ void loop() {
             || internal_bell_stage == INTERNAL_BELL_SECOND_ON
             || external_input_pressed;
         if (internal_press_started) {
-            int int_val = digitalRead(internal_insolation_in);
+            int int_val = digitalRead(internal_isolation_in);
             if (int_val
                     && internal_bell_stage == INTERNAL_BELL_IDLE
                     && (!internal_bell_has_sounded || now_ms - internal_last_on_ms >= internal_block_ms)) {
