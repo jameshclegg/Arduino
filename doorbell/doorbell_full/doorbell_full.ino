@@ -94,22 +94,6 @@ void all_in(int* x) {
     }
 }
 
-int detect(void) {
-    // Detects whether a button has been pressed and returns the pin number that was pressed
-    int inputs[8];
-    all_in(inputs);
-
-    int which_on = -1;
-    for (int i = 0; i < 8; i++) {
-        int val = digitalRead(inputs[i]);
-        if (val == LOW) {
-            which_on = inputs[i];
-        }
-    }
-
-    return which_on;
-}
-
 void setup() {
     // start serial connection
     Serial.begin(9600);
@@ -170,7 +154,7 @@ void loop() {
     bool internal_bell_has_sounded = false;
     InternalBellStage internal_bell_stage = INTERNAL_BELL_IDLE;
     unsigned long internal_bell_stage_started_ms = 0;
-    bool internal_input_was_pressed = false;
+    bool input_was_pressed[8] = {false, false, false, false, false, false, false, false};
 
     // Populate array of all inputs
     int inputs[8];
@@ -185,16 +169,24 @@ void loop() {
         delay(loop_delay_ms);
 
         unsigned long now_ms = millis();
-        int which_input = detect();
-        bool internal_input_pressed = false;
-        for (int i = 0; i < 6; i++) {
-            if (digitalRead(internal_in[i]) == LOW) {
-                internal_input_pressed = true;
+        bool input_pressed[8];
+        bool any_input_pressed = false;
+        bool internal_press_started = false;
+        bool external_input_pressed = false;
+        for (int i = 0; i < 8; i++) {
+            input_pressed[i] = digitalRead(inputs[i]) == LOW;
+            if (input_pressed[i]) {
+                any_input_pressed = true;
+                if (i < 6) {
+                    internal_press_started = internal_press_started || !input_was_pressed[i];
+                }
+                else {
+                    external_input_pressed = true;
+                }
             }
         }
-        bool internal_press_started = internal_input_pressed && !internal_input_was_pressed;
 
-        if (which_input > -1){
+        if (any_input_pressed){
             // Something pressed - start the clock
             last_on_ms = now_ms;
         }
@@ -214,34 +206,13 @@ void loop() {
         //
         // Indicator LED control
         //
-        switch (which_input) {
-            case front_door_in:
-                digitalWrite(front_door_out, HIGH);
-                break;
-            case side_door_in:
-                digitalWrite(side_door_out, HIGH);
-                break;
-            case kitchen_in:
-                digitalWrite(kitchen_out, HIGH);
-                break;
-            case living_room_in:
-                digitalWrite(living_room_out, HIGH);
-                break;
-            case b1_in:
-                digitalWrite(b1_out, HIGH);
-                break;
-            case b2_in:
-                digitalWrite(b2_out, HIGH);
-                break;
-            case b4_in:
-                digitalWrite(b4_out, HIGH);
-                break;
-            case bathroom_in:
-                digitalWrite(bathroom_out, HIGH);
-                break;
+        for (int i = 0; i < 8; i++) {
+            if (input_pressed[i]) {
+                digitalWrite(outputs[i], HIGH);
+            }
         }
 
-        // 
+        //
         // Buzzer control
         //
         switch (internal_bell_stage) {
@@ -275,37 +246,21 @@ void loop() {
         }
 
         bool bell_on = internal_bell_stage == INTERNAL_BELL_FIRST_ON
-            || internal_bell_stage == INTERNAL_BELL_SECOND_ON;
-        if (which_input > -1){
-            switch (which_input) {
-                case (front_door_in):
-                    bell_on = true;
-                    break;
-                case (side_door_in):
-                    bell_on = true;
-                    break;
-                default:
-                    if (!internal_press_started) {
-                        break;
-                    }
-                    int int_val = digitalRead(internal_insolation_in);
-                    if (!int_val) {
-                        // No buzzer if this switch is off
-                        break;
-                    }
-                    // Do the pattern
-                    if (internal_bell_stage != INTERNAL_BELL_IDLE
-                            || (internal_bell_has_sounded && now_ms - internal_last_on_ms < internal_block_ms)){
-                        // Too soon after last time an internal button was pushed: don't sound buzzer.
-                        break;
-                    }
-                    internal_bell_stage = INTERNAL_BELL_FIRST_ON;
-                    internal_bell_stage_started_ms = now_ms;
-                    bell_on = true;
-                    break;
+            || internal_bell_stage == INTERNAL_BELL_SECOND_ON
+            || external_input_pressed;
+        if (internal_press_started) {
+            int int_val = digitalRead(internal_insolation_in);
+            if (int_val
+                    && internal_bell_stage == INTERNAL_BELL_IDLE
+                    && (!internal_bell_has_sounded || now_ms - internal_last_on_ms >= internal_block_ms)) {
+                internal_bell_stage = INTERNAL_BELL_FIRST_ON;
+                internal_bell_stage_started_ms = now_ms;
+                bell_on = true;
             }
         }
         digitalWrite(bell_out, bell_on ? HIGH : LOW);
-        internal_input_was_pressed = internal_input_pressed;
+        for (int i = 0; i < 8; i++) {
+            input_was_pressed[i] = input_pressed[i];
+        }
     }
 }
