@@ -113,6 +113,9 @@ void setup() {
     // Configure the test pin
     pinMode(all_in_det, INPUT_PULLUP);
 
+    // Configure the internal isolation switch
+    pinMode(internal_insolation_in, INPUT_PULLUP);
+
     // Configure all input pins
     int x_in[8];
     all_in(x_in);
