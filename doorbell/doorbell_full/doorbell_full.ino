@@ -96,7 +96,7 @@ void all_in(int* x) {
 
 void setup() {
     // start serial connection
-    Serial.begin(9600);
+    Serial.begin(115200);
 
     //
     // Configure inputs
