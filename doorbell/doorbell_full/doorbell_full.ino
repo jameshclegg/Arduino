@@ -14,11 +14,18 @@ const int b2_out = 51;          // yellow
 const int b4_out = 52;          // green (this is labelled bedroom 3 on the unit)
 const int bathroom_out = 53;    // blue
 
-// Lights that are internal
-const int internal_out[6] = {kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out};
+const int internal_doorbell_count = 6;
+const int external_doorbell_count = 2;
+const int doorbell_count = internal_doorbell_count + external_doorbell_count;
 
-// Lights that are external
-const int external_out[2] = {front_door_out, side_door_out};
+// These arrays are kept in the same order as internal_in so each input maps to
+// the output at the same array index.
+const int internal_out[internal_doorbell_count] = {
+    kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out
+};
+
+// These arrays are likewise aligned with external_in.
+const int external_out[external_doorbell_count] = {front_door_out, side_door_out};
 
 //
 // INPUT PINS
@@ -37,14 +44,16 @@ const int b2_in = 27;           // yellow
 const int b4_in = 28;           // green
 const int bathroom_in = 29;     // blue
 
-// Internal isolation switch
+// Grounding this active-low input isolates (disables) the internal bell.
 const int internal_isolation_in = 38;
 
-// All internal inputs
-const int internal_in[6] = {kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in};
+// Internal inputs correspond positionally to internal_out.
+const int internal_in[internal_doorbell_count] = {
+    kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in
+};
 
-// All external inputs
-const int external_in[2] = {front_door_in, side_door_in};
+// External inputs correspond positionally to external_out.
+const int external_in[external_doorbell_count] = {front_door_in, side_door_in};
 
 // 
 // Other constants
@@ -62,6 +71,8 @@ const unsigned long led_timer_delay_ms = 4000;
 // Sets how long the buzzer is blocked for after an internal bell is pushed
 const unsigned long internal_block_ms = 10000;
 
+// The internal bell uses a non-blocking state machine so inputs can still be
+// read while the two-buzz pattern is playing.
 enum InternalBellStage {
     INTERNAL_BELL_IDLE,
     INTERNAL_BELL_FIRST_ON,
@@ -74,28 +85,32 @@ enum InternalBellStage {
 // Helper functions
 //
 
-void all_out(int* x) {
-    // Fills in all outputs in x
-    for (int i = 0; i < 6; i++) {
-        x[i] = internal_out[i];
+void all_out(int* pins) {
+    // Internal pins come first, followed by the external pins.
+    for (int i = 0; i < internal_doorbell_count; i++) {
+        pins[i] = internal_out[i];
     }
-    for (int i = 0; i < 2; i++) {
-        x[6 + i] = external_out[i];
+    for (int i = 0; i < external_doorbell_count; i++) {
+        pins[internal_doorbell_count + i] = external_out[i];
     }
 }
 
-void all_in(int* x) {
-    // Fills in all inputs in x
-    for (int i = 0; i < 6; i++) {
-        x[i] = internal_in[i];
+void all_in(int* pins) {
+    // Keep the same ordering as all_out so inputs[i] controls outputs[i].
+    for (int i = 0; i < internal_doorbell_count; i++) {
+        pins[i] = internal_in[i];
     }
-    for (int i = 0; i < 2; i++) {
-        x[6 + i] = external_in[i];
+    for (int i = 0; i < external_doorbell_count; i++) {
+        pins[internal_doorbell_count + i] = external_in[i];
     }
+}
+
+bool internal_bell_stage_is_on(InternalBellStage stage) {
+    return stage == INTERNAL_BELL_FIRST_ON || stage == INTERNAL_BELL_SECOND_ON;
 }
 
 void setup() {
-    // start serial connection
+    // Start serial connection.
     Serial.begin(115200);
 
     //
@@ -105,13 +120,13 @@ void setup() {
     // Configure the test pin
     pinMode(all_in_det, INPUT_PULLUP);
 
-    // Configure the internal isolation switch
+    // INPUT_PULLUP makes HIGH the normal enabled state and LOW isolated.
     pinMode(internal_isolation_in, INPUT_PULLUP);
 
-    // Configure all input pins
-    int x_in[8];
+    // Bell pushes are active-low: pressing one connects its pin to ground.
+    int x_in[doorbell_count];
     all_in(x_in);
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < doorbell_count; i++) {
         pinMode(x_in[i], INPUT_PULLUP);
     }
 
@@ -120,9 +135,9 @@ void setup() {
     //
 
     // Configure all light output pins
-    int x_out[8];
+    int x_out[doorbell_count];
     all_out(x_out);
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < doorbell_count; i++) {
         pinMode(x_out[i], OUTPUT);
         digitalWrite(x_out[i], LOW);
     }
@@ -131,7 +146,7 @@ void setup() {
     pinMode(bell_out, OUTPUT);
     digitalWrite(bell_out, LOW);
 
-    // Configure builtin LED
+    // Configure built-in LED.
     pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.println("setup done");
@@ -140,28 +155,32 @@ void setup() {
 void loop() {
     // Desired functionality
 
-    // If any switch is pushed then the corresponding light is illuminated and goes off after t_light_on_sec sec.
-    // If an external switch is pushed then the buzzer sounds for the length of time that the button is pushed.
-    // If an internal switch is pushed then the buzzer sounds for 2 sharp buzzes, and after that does not sound again for t_break_sec sec.
+    // If any switch is pushed then the corresponding light is illuminated and
+    // goes off after led_timer_delay_ms without another press.
+    // If an external switch is pushed then the buzzer sounds for as long as
+    // that button is held.
+    // If an internal switch is pushed then the buzzer sounds for two sharp
+    // buzzes, then ignores internal presses for internal_block_ms.
 
-    // There is a switch, internal_bell, that sets whether the internal bells sound.
-    // If that switch is off then buzzer for the internal bells does not sound.
+    // The isolation switch only disables internal buzzer patterns. Indicator
+    // lights and external door buzzers continue to operate.
 
-    // Used to store output of millis(). Wraps after about 50 days.
+    // These values persist because loop() remains inside the polling loop.
+    // Unsigned subtraction keeps elapsed-time checks safe when millis() wraps.
     unsigned long last_on_ms = 0;
-    unsigned long light_timer_ms = 0;
     unsigned long internal_last_on_ms = 0;
     bool internal_bell_has_sounded = false;
     InternalBellStage internal_bell_stage = INTERNAL_BELL_IDLE;
     unsigned long internal_bell_stage_started_ms = 0;
-    bool input_was_pressed[8] = {false, false, false, false, false, false, false, false};
+    // Previous states let internal bells trigger on press edges rather than
+    // repeatedly while a button is held.
+    bool input_was_pressed[doorbell_count] = {};
 
-    // Populate array of all inputs
-    int inputs[8];
+    // inputs[i] and outputs[i] always describe the same door or room.
+    int inputs[doorbell_count];
     all_in(inputs);
 
-    // Populate array of all outputs
-    int outputs[8];
+    int outputs[doorbell_count];
     all_out(outputs);
 
 
@@ -169,16 +188,19 @@ void loop() {
         delay(loop_delay_ms);
 
         unsigned long now_ms = millis();
-        bool input_pressed[8];
+        bool input_pressed[doorbell_count];
         bool any_input_pressed = false;
         bool internal_press_started = false;
         bool external_input_pressed = false;
         bool test_input_pressed = digitalRead(all_in_det) == LOW;
-        for (int i = 0; i < 8; i++) {
+
+        // Sample every input independently so simultaneous presses all light
+        // their indicators. The final two entries are the external doors.
+        for (int i = 0; i < doorbell_count; i++) {
             input_pressed[i] = digitalRead(inputs[i]) == LOW;
             if (input_pressed[i]) {
                 any_input_pressed = true;
-                if (i < 6) {
+                if (i < internal_doorbell_count) {
                     internal_press_started = internal_press_started || !input_was_pressed[i];
                 }
                 else {
@@ -188,18 +210,15 @@ void loop() {
         }
         any_input_pressed = any_input_pressed || test_input_pressed;
 
-        if (any_input_pressed){
-            // Something pressed - start the clock
+        if (any_input_pressed) {
+            // Extend the indicator timeout for as long as any input is held.
             last_on_ms = now_ms;
         }
         else {
-            // Nothing pressed - switch bell off
-            digitalWrite(bell_out, LOW);
-
-            // Switch all lights off after some time
-            light_timer_ms = now_ms;
-            if (light_timer_ms - last_on_ms >= led_timer_delay_ms) {
-                for (int i = 0; i < 8; i++) {
+            // Indicators latch on until there has been no input for the full
+            // timeout. Subtraction is safe across millis() rollover.
+            if (now_ms - last_on_ms >= led_timer_delay_ms) {
+                for (int i = 0; i < doorbell_count; i++) {
                     digitalWrite(outputs[i], LOW);
                 }
             }
@@ -208,7 +227,9 @@ void loop() {
         //
         // Indicator LED control
         //
-        for (int i = 0; i < 8; i++) {
+        // The test input lights every indicator but deliberately does not
+        // activate the buzzer.
+        for (int i = 0; i < doorbell_count; i++) {
             if (input_pressed[i] || test_input_pressed) {
                 digitalWrite(outputs[i], HIGH);
             }
@@ -217,6 +238,8 @@ void loop() {
         //
         // Buzzer control
         //
+        // Advance at most one timed stage per poll. Unlike delay(), this keeps
+        // external buttons and indicator lights responsive during the pattern.
         switch (internal_bell_stage) {
             case INTERNAL_BELL_FIRST_ON:
                 if (now_ms - internal_bell_stage_started_ms >= internal_bell_on_ms) {
@@ -247,21 +270,28 @@ void loop() {
                 break;
         }
 
-        bool bell_on = internal_bell_stage == INTERNAL_BELL_FIRST_ON
-            || internal_bell_stage == INTERNAL_BELL_SECOND_ON
-            || external_input_pressed;
-        if (internal_press_started) {
-            int int_val = digitalRead(internal_isolation_in);
-            if (int_val
-                    && internal_bell_stage == INTERNAL_BELL_IDLE
-                    && (!internal_bell_has_sounded || now_ms - internal_last_on_ms >= internal_block_ms)) {
-                internal_bell_stage = INTERNAL_BELL_FIRST_ON;
-                internal_bell_stage_started_ms = now_ms;
-                bell_on = true;
-            }
+        bool internal_bell_enabled = digitalRead(internal_isolation_in) == HIGH;
+        bool internal_bell_is_idle = internal_bell_stage == INTERNAL_BELL_IDLE;
+        bool internal_bell_cooldown_complete = !internal_bell_has_sounded
+            || now_ms - internal_last_on_ms >= internal_block_ms;
+        bool start_internal_bell = internal_press_started
+            && internal_bell_enabled
+            && internal_bell_is_idle
+            && internal_bell_cooldown_complete;
+
+        if (start_internal_bell) {
+            internal_bell_stage = INTERNAL_BELL_FIRST_ON;
+            internal_bell_stage_started_ms = now_ms;
         }
+
+        // External buttons sound continuously while held. Internal buttons
+        // sound only during the two ON stages of their pattern.
+        bool internal_bell_on = internal_bell_stage_is_on(internal_bell_stage);
+        bool bell_on = external_input_pressed || internal_bell_on;
         digitalWrite(bell_out, bell_on ? HIGH : LOW);
-        for (int i = 0; i < 8; i++) {
+
+        // Save this sample for edge detection during the next poll.
+        for (int i = 0; i < doorbell_count; i++) {
             input_was_pressed[i] = input_pressed[i];
         }
     }
