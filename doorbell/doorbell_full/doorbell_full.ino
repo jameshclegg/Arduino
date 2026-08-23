@@ -62,6 +62,14 @@ const unsigned long led_timer_delay_ms = 4000;
 // Sets how long the buzzer is blocked for after an internal bell is pushed
 const unsigned long internal_block_ms = 10000;
 
+enum InternalBellStage {
+    INTERNAL_BELL_IDLE,
+    INTERNAL_BELL_FIRST_ON,
+    INTERNAL_BELL_FIRST_OFF,
+    INTERNAL_BELL_SECOND_ON,
+    INTERNAL_BELL_SECOND_OFF
+};
+
 // 
 // Helper functions
 //
@@ -160,6 +168,8 @@ void loop() {
     unsigned long light_timer_ms = 0;
     unsigned long internal_last_on_ms = 0;
     bool internal_bell_has_sounded = false;
+    InternalBellStage internal_bell_stage = INTERNAL_BELL_IDLE;
+    unsigned long internal_bell_stage_started_ms = 0;
 
     // Populate array of all inputs
     int inputs[8];
@@ -173,18 +183,19 @@ void loop() {
     while (true) {
         delay(loop_delay_ms);
 
+        unsigned long now_ms = millis();
         int which_input = detect();
 
         if (which_input > -1){
             // Something pressed - start the clock
-            last_on_ms = millis();
+            last_on_ms = now_ms;
         }
         else {
             // Nothing pressed - switch bell off
             digitalWrite(bell_out, LOW);
 
             // Switch all lights off after some time
-            light_timer_ms = millis();
+            light_timer_ms = now_ms;
             if (light_timer_ms - last_on_ms >= led_timer_delay_ms) {
                 for (int i = 0; i < 8; i++) {
                     digitalWrite(outputs[i], LOW);
@@ -225,14 +236,45 @@ void loop() {
         // 
         // Buzzer control
         //
-        digitalWrite(bell_out, LOW);
+        switch (internal_bell_stage) {
+            case INTERNAL_BELL_FIRST_ON:
+                if (now_ms - internal_bell_stage_started_ms >= internal_bell_on_ms) {
+                    internal_bell_stage = INTERNAL_BELL_FIRST_OFF;
+                    internal_bell_stage_started_ms = now_ms;
+                }
+                break;
+            case INTERNAL_BELL_FIRST_OFF:
+                if (now_ms - internal_bell_stage_started_ms >= internal_bell_off_ms) {
+                    internal_bell_stage = INTERNAL_BELL_SECOND_ON;
+                    internal_bell_stage_started_ms = now_ms;
+                }
+                break;
+            case INTERNAL_BELL_SECOND_ON:
+                if (now_ms - internal_bell_stage_started_ms >= internal_bell_on_ms) {
+                    internal_bell_stage = INTERNAL_BELL_SECOND_OFF;
+                    internal_bell_stage_started_ms = now_ms;
+                }
+                break;
+            case INTERNAL_BELL_SECOND_OFF:
+                if (now_ms - internal_bell_stage_started_ms >= internal_bell_off_ms) {
+                    internal_bell_stage = INTERNAL_BELL_IDLE;
+                    internal_last_on_ms = now_ms;
+                    internal_bell_has_sounded = true;
+                }
+                break;
+            case INTERNAL_BELL_IDLE:
+                break;
+        }
+
+        bool bell_on = internal_bell_stage == INTERNAL_BELL_FIRST_ON
+            || internal_bell_stage == INTERNAL_BELL_SECOND_ON;
         if (which_input > -1){
             switch (which_input) {
                 case (front_door_in):
-                    digitalWrite(bell_out, HIGH);
+                    bell_on = true;
                     break;
                 case (side_door_in):
-                    digitalWrite(bell_out, HIGH);
+                    bell_on = true;
                     break;
                 default:
                     int int_val = digitalRead(internal_insolation_in);
@@ -241,22 +283,17 @@ void loop() {
                         break;
                     }
                     // Do the pattern
-                    if (internal_bell_has_sounded && millis() - internal_last_on_ms < internal_block_ms){
+                    if (internal_bell_stage != INTERNAL_BELL_IDLE
+                            || (internal_bell_has_sounded && now_ms - internal_last_on_ms < internal_block_ms)){
                         // Too soon after last time an internal button was pushed: don't sound buzzer.
                         break;
                     }
-                    digitalWrite(bell_out, HIGH);
-                    delay(internal_bell_on_ms);
-                    digitalWrite(bell_out, LOW);
-                    delay(internal_bell_off_ms);
-                    digitalWrite(bell_out, HIGH);
-                    delay(internal_bell_on_ms);
-                    digitalWrite(bell_out, LOW);
-                    delay(internal_bell_off_ms);
-                    internal_last_on_ms = millis();
-                    internal_bell_has_sounded = true;
+                    internal_bell_stage = INTERNAL_BELL_FIRST_ON;
+                    internal_bell_stage_started_ms = now_ms;
+                    bell_on = true;
                     break;
             }
         }
+        digitalWrite(bell_out, bell_on ? HIGH : LOW);
     }
 }
