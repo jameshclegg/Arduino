@@ -159,6 +159,7 @@ void loop() {
     unsigned long last_on_ms = 0;
     unsigned long light_timer_ms = 0;
     unsigned long internal_last_on_ms = 0;
+    bool internal_bell_has_sounded = false;
 
     // Populate array of all inputs
     int inputs[8];
@@ -240,7 +241,7 @@ void loop() {
                         break;
                     }
                     // Do the pattern
-                    if (millis() - internal_last_on_ms < internal_block_ms){
+                    if (internal_bell_has_sounded && millis() - internal_last_on_ms < internal_block_ms){
                         // Too soon after last time an internal button was pushed: don't sound buzzer.
                         break;
                     }
@@ -253,6 +254,7 @@ void loop() {
                     digitalWrite(bell_out, LOW);
                     delay(internal_bell_off_ms);
                     internal_last_on_ms = millis();
+                    internal_bell_has_sounded = true;
                     break;
             }
         }
