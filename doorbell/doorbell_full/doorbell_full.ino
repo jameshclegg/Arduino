@@ -50,17 +50,17 @@ const int external_in[2] = {front_door_in, side_door_in};
 // Other constants
 //
 // How often to read inputs
-const int loop_delay_ms = 100;
+const unsigned long loop_delay_ms = 100;
 
 // Internal bell pattern
-const int internal_bell_on_ms = 500;
-const int internal_bell_off_ms = 150;
+const unsigned long internal_bell_on_ms = 500;
+const unsigned long internal_bell_off_ms = 150;
 
 // Sets how long the LEDs stay on after the last button is pushed
-const int led_timer_delay_ms = 4000;
+const unsigned long led_timer_delay_ms = 4000;
 
 // Sets how long the buzzer is blocked for after an internal bell is pushed
-const int internal_block_ms = 10000;
+const unsigned long internal_block_ms = 10000;
 
 // 
 // Helper functions
@@ -153,9 +153,9 @@ void loop() {
     // If that switch is off then buzzer for the internal bells does not sound.
 
     // Used to store output of millis(). Wraps after about 50 days.
-    int last_on_ms = 0;
-    int light_timer_ms = 0;
-    int internal_last_on_ms = 0;
+    unsigned long last_on_ms = 0;
+    unsigned long light_timer_ms = 0;
+    unsigned long internal_last_on_ms = 0;
 
     // Populate array of all inputs
     int inputs[8];
@@ -181,7 +181,7 @@ void loop() {
 
             // Switch all lights off after some time
             light_timer_ms = millis();
-            if (light_timer_ms > (last_on_ms + led_timer_delay_ms)) {
+            if (light_timer_ms - last_on_ms >= led_timer_delay_ms) {
                 for (int i = 0; i < 8; i++) {
                     digitalWrite(outputs[i], LOW);
                 }
@@ -236,7 +236,7 @@ void loop() {
                         break;
                     }
                     // Do the pattern
-                    if (millis() < (internal_last_on_ms+internal_block_ms)){
+                    if (millis() - internal_last_on_ms < internal_block_ms){
                         // Too soon after last time an internal button was pushed: don't sound buzzer.
                         break;
                     }
