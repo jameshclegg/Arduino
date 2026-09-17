@@ -282,6 +282,18 @@ void loop() {
         if (start_internal_bell) {
             internal_bell_stage = INTERNAL_BELL_FIRST_ON;
             internal_bell_stage_started_ms = now_ms;
+            Serial.println("Internal bell started");
+        }
+        else if (internal_press_started) {
+            if (!internal_bell_enabled) {
+                Serial.println("Internal bell ignored: isolated");
+            }
+            else if (!internal_bell_is_idle) {
+                Serial.println("Internal bell ignored: pattern already playing");
+            }
+            else {
+                Serial.println("Internal bell ignored: cooldown");
+            }
         }
 
         // External buttons sound continuously while held. Internal buttons
