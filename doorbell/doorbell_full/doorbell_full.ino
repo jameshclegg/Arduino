@@ -41,7 +41,7 @@ const unsigned long internal_bell_on_ms = 500;
 const unsigned long internal_bell_off_ms = 150;
 
 // Sets how long the LEDs stay on after the last button is pushed
-const unsigned long led_timer_delay_ms = 4000;
+const unsigned long led_timer_delay_ms = 25000;
 
 // Sets how long the buzzer is blocked for after an internal bell is pushed
 const unsigned long internal_block_ms = 10000;
