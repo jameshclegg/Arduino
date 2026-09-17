@@ -1,59 +1,31 @@
 
 //
-// OUTPUT PINS
+// WIRING
 //
-// These are the pin numbers for the outputs (lights and bell)
-// Colours represent jumper wires.
-const int bell_out = 32;        // red
-const int front_door_out = 46;  // purple
-const int side_door_out = 47;   // white
-const int kitchen_out = 48;     // lt grey (almost white)
-const int living_room_out = 49; // black
-const int b1_out = 50;          // orange
-const int b2_out = 51;          // yellow
-const int b4_out = 52;          // green (this is labelled bedroom 3 on the unit)
-const int bathroom_out = 53;    // blue
-
-const int internal_doorbell_count = 6;
-const int external_doorbell_count = 2;
-const int doorbell_count = internal_doorbell_count + external_doorbell_count;
-
-// These arrays are kept in the same order as internal_in so each input maps to
-// the output at the same array index.
-const int internal_out[internal_doorbell_count] = {
-    kitchen_out, living_room_out, b1_out, b2_out, b4_out, bathroom_out
+// Each row keeps a button, its indicator light, and its bell type together.
+// The colour in each comment is the jumper-wire colour for both pins.
+struct Doorbell {
+    uint8_t input_pin;
+    uint8_t light_pin;
+    bool internal;
 };
 
-// These arrays are likewise aligned with external_in.
-const int external_out[external_doorbell_count] = {front_door_out, side_door_out};
-
-//
-// INPUT PINS
-//
-
-// A pin that can be used to switch on all lights for testing
-const int all_in_det = 35;
-
-// These are the pin numbers for the inputs (connected to bell pushes)
-const int front_door_in = 22;   // purple
-const int side_door_in = 23;    // white, not working?
-const int kitchen_in = 24;      // lt grey
-const int living_room_in = 25;  // black
-const int b1_in = 26;           // orange
-const int b2_in = 27;           // yellow
-const int b4_in = 28;           // green
-const int bathroom_in = 29;     // blue
-
-// Grounding this active-low input isolates (disables) the internal bell.
-const int internal_isolation_in = 38;
-
-// Internal inputs correspond positionally to internal_out.
-const int internal_in[internal_doorbell_count] = {
-    kitchen_in, living_room_in, b1_in, b2_in, b4_in, bathroom_in
+const Doorbell doorbells[] = {
+    {24, 48, true},  // Kitchen, light grey (almost white)
+    {25, 49, true},  // Living room, black
+    {26, 50, true},  // Bedroom 1, orange
+    {27, 51, true},  // Bedroom 2, yellow
+    {28, 52, true},  // B4, green (labelled bedroom 3 on the unit)
+    {29, 53, true},  // Bathroom, blue
+    {22, 46, false}, // Front door, purple
+    {23, 47, false}  // Side door, white (not working?)
 };
 
-// External inputs correspond positionally to external_out.
-const int external_in[external_doorbell_count] = {front_door_in, side_door_in};
+const int doorbell_count = sizeof(doorbells) / sizeof(doorbells[0]);
+
+const uint8_t bell_out = 32;             // Red
+const uint8_t all_in_det = 35;           // Active-low all-lights test input
+const uint8_t internal_isolation_in = 38; // Active-low internal bell isolation
 
 // 
 // Other constants
@@ -92,37 +64,17 @@ struct DebouncedInput {
 
 // Declare this explicitly because Arduino's automatic prototype generation
 // can place prototypes before user-defined types.
-bool read_active_low_input(int pin, DebouncedInput& state, unsigned long now_ms);
+bool read_active_low_input(uint8_t pin, DebouncedInput& state, unsigned long now_ms);
 
 // 
 // Helper functions
 //
 
-void all_out(int* pins) {
-    // Internal pins come first, followed by the external pins.
-    for (int i = 0; i < internal_doorbell_count; i++) {
-        pins[i] = internal_out[i];
-    }
-    for (int i = 0; i < external_doorbell_count; i++) {
-        pins[internal_doorbell_count + i] = external_out[i];
-    }
-}
-
-void all_in(int* pins) {
-    // Keep the same ordering as all_out so inputs[i] controls outputs[i].
-    for (int i = 0; i < internal_doorbell_count; i++) {
-        pins[i] = internal_in[i];
-    }
-    for (int i = 0; i < external_doorbell_count; i++) {
-        pins[internal_doorbell_count + i] = external_in[i];
-    }
-}
-
 bool internal_bell_stage_is_on(InternalBellStage stage) {
     return stage == INTERNAL_BELL_FIRST_ON || stage == INTERNAL_BELL_SECOND_ON;
 }
 
-bool read_active_low_input(int pin, DebouncedInput& state, unsigned long now_ms) {
+bool read_active_low_input(uint8_t pin, DebouncedInput& state, unsigned long now_ms) {
     bool raw_active = digitalRead(pin) == LOW;
 
     if (raw_active != state.raw_active) {
@@ -143,7 +95,7 @@ void setup() {
     Serial.begin(115200);
 
     //
-    // Configure inputs
+    // Configure hardware
     //
 
     // Configure the test pin
@@ -152,23 +104,12 @@ void setup() {
     // INPUT_PULLUP makes HIGH the normal enabled state and LOW isolated.
     pinMode(internal_isolation_in, INPUT_PULLUP);
 
-    // Bell pushes are active-low: pressing one connects its pin to ground.
-    int x_in[doorbell_count];
-    all_in(x_in);
+    // Bell pushes are active-low. Configure each push and its paired light
+    // from the same table row so the mapping cannot get out of step.
     for (int i = 0; i < doorbell_count; i++) {
-        pinMode(x_in[i], INPUT_PULLUP);
-    }
-
-    //
-    // Configure outputs
-    //
-
-    // Configure all light output pins
-    int x_out[doorbell_count];
-    all_out(x_out);
-    for (int i = 0; i < doorbell_count; i++) {
-        pinMode(x_out[i], OUTPUT);
-        digitalWrite(x_out[i], LOW);
+        pinMode(doorbells[i].input_pin, INPUT_PULLUP);
+        pinMode(doorbells[i].light_pin, OUTPUT);
+        digitalWrite(doorbells[i].light_pin, LOW);
     }
 
     // Configure the bell
@@ -200,12 +141,6 @@ void loop() {
     static DebouncedInput test_input_state = {};
     static DebouncedInput isolation_input_state = {};
 
-    // inputs[i] and outputs[i] always describe the same door or room.
-    int inputs[doorbell_count];
-    all_in(inputs);
-    int outputs[doorbell_count];
-    all_out(outputs);
-
     delay(loop_delay_ms);
 
     unsigned long now_ms = millis();
@@ -219,13 +154,13 @@ void loop() {
         internal_isolation_in, isolation_input_state, now_ms);
 
     // Debounce every input independently so contact bounce cannot create
-    // false press edges. The final two entries are the external doors.
+    // false press edges.
     for (int i = 0; i < doorbell_count; i++) {
         input_pressed[i] = read_active_low_input(
-            inputs[i], input_states[i], now_ms);
+            doorbells[i].input_pin, input_states[i], now_ms);
         if (input_pressed[i]) {
             any_input_pressed = true;
-            if (i < internal_doorbell_count) {
+            if (doorbells[i].internal) {
                 internal_press_started = internal_press_started || !input_was_pressed[i];
             }
             else {
@@ -244,7 +179,7 @@ void loop() {
         // timeout. Subtraction is safe across millis() rollover.
         if (now_ms - last_on_ms >= led_timer_delay_ms) {
             for (int i = 0; i < doorbell_count; i++) {
-                digitalWrite(outputs[i], LOW);
+                digitalWrite(doorbells[i].light_pin, LOW);
             }
         }
     }
@@ -256,7 +191,7 @@ void loop() {
     // activate the buzzer.
     for (int i = 0; i < doorbell_count; i++) {
         if (input_pressed[i] || test_input_pressed) {
-            digitalWrite(outputs[i], HIGH);
+            digitalWrite(doorbells[i].light_pin, HIGH);
         }
     }
 
