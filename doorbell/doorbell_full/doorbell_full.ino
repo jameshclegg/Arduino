@@ -59,7 +59,10 @@ const int external_in[external_doorbell_count] = {front_door_in, side_door_in};
 // Other constants
 //
 // How often to read inputs
-const unsigned long loop_delay_ms = 100;
+const unsigned long loop_delay_ms = 10;
+
+// An input must remain unchanged for this long before its new state is used.
+const unsigned long input_debounce_ms = 30;
 
 // Internal bell pattern
 const unsigned long internal_bell_on_ms = 500;
@@ -80,6 +83,16 @@ enum InternalBellStage {
     INTERNAL_BELL_SECOND_ON,
     INTERNAL_BELL_SECOND_OFF
 };
+
+struct DebouncedInput {
+    bool raw_active;
+    bool active;
+    unsigned long raw_changed_ms;
+};
+
+// Declare this explicitly because Arduino's automatic prototype generation
+// can place prototypes before user-defined types.
+bool read_active_low_input(int pin, DebouncedInput& state, unsigned long now_ms);
 
 // 
 // Helper functions
@@ -107,6 +120,22 @@ void all_in(int* pins) {
 
 bool internal_bell_stage_is_on(InternalBellStage stage) {
     return stage == INTERNAL_BELL_FIRST_ON || stage == INTERNAL_BELL_SECOND_ON;
+}
+
+bool read_active_low_input(int pin, DebouncedInput& state, unsigned long now_ms) {
+    bool raw_active = digitalRead(pin) == LOW;
+
+    if (raw_active != state.raw_active) {
+        state.raw_active = raw_active;
+        state.raw_changed_ms = now_ms;
+    }
+
+    if (state.active != state.raw_active
+            && now_ms - state.raw_changed_ms >= input_debounce_ms) {
+        state.active = state.raw_active;
+    }
+
+    return state.active;
 }
 
 void setup() {
@@ -175,6 +204,9 @@ void loop() {
     // Previous states let internal bells trigger on press edges rather than
     // repeatedly while a button is held.
     bool input_was_pressed[doorbell_count] = {};
+    DebouncedInput input_states[doorbell_count] = {};
+    DebouncedInput test_input_state = {};
+    DebouncedInput isolation_input_state = {};
 
     // inputs[i] and outputs[i] always describe the same door or room.
     int inputs[doorbell_count];
@@ -192,12 +224,16 @@ void loop() {
         bool any_input_pressed = false;
         bool internal_press_started = false;
         bool external_input_pressed = false;
-        bool test_input_pressed = digitalRead(all_in_det) == LOW;
+        bool test_input_pressed = read_active_low_input(
+            all_in_det, test_input_state, now_ms);
+        bool internal_bell_isolated = read_active_low_input(
+            internal_isolation_in, isolation_input_state, now_ms);
 
-        // Sample every input independently so simultaneous presses all light
-        // their indicators. The final two entries are the external doors.
+        // Debounce every input independently so contact bounce cannot create
+        // false press edges. The final two entries are the external doors.
         for (int i = 0; i < doorbell_count; i++) {
-            input_pressed[i] = digitalRead(inputs[i]) == LOW;
+            input_pressed[i] = read_active_low_input(
+                inputs[i], input_states[i], now_ms);
             if (input_pressed[i]) {
                 any_input_pressed = true;
                 if (i < internal_doorbell_count) {
@@ -270,7 +306,7 @@ void loop() {
                 break;
         }
 
-        bool internal_bell_enabled = digitalRead(internal_isolation_in) == HIGH;
+        bool internal_bell_enabled = !internal_bell_isolated;
         bool internal_bell_is_idle = internal_bell_stage == INTERNAL_BELL_IDLE;
         bool internal_bell_cooldown_complete = !internal_bell_has_sounded
             || now_ms - internal_last_on_ms >= internal_block_ms;
